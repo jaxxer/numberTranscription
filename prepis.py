@@ -52,32 +52,6 @@ class BillionGroup(_AbstractGroup):
 		return (u"jedna miliarda", u"miliardy", u"miliard")
 
 class MillionGroup(_AbstractGroup):
-	#digits = ""
-	
-	#def __init__(self, number):
-		#if type(number) is str:
-			#self.digits = number[-9:-6]
-		#else:
-			#raise TypeError("Given number is not 'str'.")
-	
-	#def get(self):
-		#base = BaseGroup(self.digits)
-		#transcriptList = base.get()
-		
-		#if not self.digits:
-			#return u""
-		
-		#digitsToInt = int(self.digits)
-		
-		#if digitsToInt is 1:
-			#return [u"jeden milión"]
-		#elif 1 < digitsToInt and digitsToInt < 5:
-			#transcriptList.append(u"milióny")
-		#elif digitsToInt >= 5:
-			#transcriptList.append(u"miliónů")
-		
-		#return transcriptList
-	
 	def filterDigits(self, number):
 		return number[-9:-6]
 	
@@ -85,32 +59,6 @@ class MillionGroup(_AbstractGroup):
 		return (u"jeden milión", u"milióny", u"miliónů")
 
 class ThousandGroup(_AbstractGroup):
-	#digits = ""
-	
-	#def __init__(self, number):
-		#if type(number) is str:
-			#self.digits = number[-6:-3]
-		#else:
-			#raise TypeError("Given number is not 'str'.")
-	
-	#def get(self):
-		#base = BaseGroup(self.digits)
-		#transcriptList = base.get()
-		
-		#if not self.digits:
-			#return u""
-		
-		#digitsToInt = int(self.digits)
-		
-		#if digitsToInt is 1:
-			#return [u"jeden tisíc"]
-		#elif 1 < digitsToInt and digitsToInt < 5:
-			#transcriptList.append(u"tisíce")
-		#elif digitsToInt >= 5:
-			#transcriptList.append(u"tisíc")
-		
-		#return transcriptList
-	
 	def filterDigits(self, number):
 		return number[-6:-3]
 	
@@ -118,14 +66,6 @@ class ThousandGroup(_AbstractGroup):
 		return (u"jeden tisíc", u"tisíce", u"tisíc")
 
 class BaseGroup(_AbstractGroup):
-	#digits = ""
-	
-	#def __init__(self, number):
-		#if type(number) is str:
-			#self.digits = number[-3:]
-		#else:
-			#raise TypeError("Given number is not 'str'.")
-	
 	def get(self):
 		transcriptList = []
 		
@@ -245,8 +185,8 @@ class NumberTranscription:
 		self.digits = digits
 	
 	def transcript(self):
-		decimals = ""
 		digits = self.digits
+		decimals = ""
 		
 		numberParts = digits.split(".", 1)
 		
@@ -254,7 +194,24 @@ class NumberTranscription:
 			digits = numberParts[0]
 			decimals = numberParts[1]
 		
+		integerPart = self.transcriptIntegerPart(digits)
+		decimalPart = self.transcriptDecimalPart(decimals)
 		
+		integerPartPostfix = u""
+		
+		if decimalPart:
+			digitsToInt = int(digits)
+			
+			if digitsToInt is 1:
+				integerPartPostfix = self.words[0]
+			elif 1 < digitsToInt and digitsToInt < 5:
+				integerPartPostfix = self.words[1]
+			else:
+				integerPartPostfix = self.words[2]
+		
+		return [integerPart, integerPartPostfix, decimalPart]
+	
+	def transcriptIntegerPart(self, digits):
 		transcriptList = []
 		
 		if digits is "0":
@@ -276,29 +233,68 @@ class NumberTranscription:
 		n = BaseGroup(digits)
 		transcriptList.extend(n.get())
 		
-		# ===============================
+		return self.transcriptListToStr(transcriptList)
+	
+	def transcriptDecimalPart(self, decimals):
+		transcriptList = []
 		
 		n = DecimalGroup(decimals)
 		decimalsTranscript = n.get()
 		
-		if decimalsTranscript:
-			digitsToInt = int(digits)
-			
-			if digitsToInt is 1:
-				transcriptList.append(self.words[0])
-			elif 1 < digitsToInt and digitsToInt < 5:
-				transcriptList.append(self.words[1])
-			else:
-				transcriptList.append(self.words[2])
-		
 		transcriptList.extend(n.get())
 		
-		# ===============================
-		
+		return self.transcriptListToStr(transcriptList)
+	
+	def transcriptListToStr(self, transcriptList):
 		transcriptList = filter(len, transcriptList)
 		
 		return u" ".join(transcriptList)
 
+
+class CrownTranscription(NumberTranscription):
+	words = (u"koruna", u"koruny", u"korun")
+	
+	def transcript(self):
+		digits = self.digits
+		decimals = ""
+		
+		numberParts = digits.split(".", 1)
+		
+		if len(numberParts) > 1:
+			digits = numberParts[0]
+			decimals = numberParts[1]
+		
+		integerPart = self.transcriptIntegerPart(digits)
+		decimalPart = self.transcriptDecimalPart(decimals)
+		
+		integerPartPostfix = u""
+		
+		digitsToInt = int(digits)
+		
+		if digitsToInt is 1:
+			integerPartPostfix = self.words[0]
+		elif 1 < digitsToInt and digitsToInt < 5:
+			integerPartPostfix = self.words[1]
+		else:
+			integerPartPostfix = self.words[2]
+		
+		return [integerPart, integerPartPostfix, decimalPart]
+	
+	def transcriptDecimalPart(self, decimals):
+		transcriptList = []
+		
+		n = CentsGroup(decimals)
+		decimalsTranscript = n.get()
+		
+		transcriptList.extend(n.get())
+		
+		return self.transcriptListToStr(transcriptList)
+
+class CentsGroup(DecimalGroup):
+	words = (u"haléř", u"haléře", u"haléřů")
+	
+	def getWords(self):
+		return self.words
 
 
 if __name__ == "__main__":
@@ -307,9 +303,10 @@ if __name__ == "__main__":
 	
 	
 	
-	for i in [-3, -6.35]:
-		n = NumberTranscription(i)
-		transcription = n.transcript()
+	for i in [3, 1307.69]:
+		#n = NumberTranscription(i)
+		n = CrownTranscription(i)
+		transcription = n.transcriptListToStr(n.transcript())
 		
 		print "%f - %s" % (i, transcription)
 	
